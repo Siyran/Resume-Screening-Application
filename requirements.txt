@@ -6,5 +6,5 @@ google-auth
 google-auth-oauthlib
 python-docx
 PyPDF2
-requests
 gunicorn
+google-generativeai
