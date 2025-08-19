@@ -11,8 +11,13 @@ app = Flask(__name__)
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # Load credentials.json from the repo folder
-creds = service_account.Credentials.from_service_account_file(
-    "credentials.json", scopes=SCOPES
+import json
+from google.oauth2 import service_account
+
+GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDENTIALS")
+creds_dict = json.loads(GOOGLE_CREDS_JSON)
+creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scope)
+
 )
 client = gspread.authorize(creds)
 
