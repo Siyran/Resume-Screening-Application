@@ -11,15 +11,19 @@ app = Flask(__name__)
 CORS(app)
 
 # ---------------- Google Sheets Setup ----------------
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-SHEET_ID = os.getenv("SHEET_ID")  # keep Sheet ID as env variable
+import json
+import gspread
+from google.oauth2.service_account import Credentials
 
-if not SHEET_ID:
-    raise ValueError("Missing SHEET_ID environment variable.")
+GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDENTIALS")
+creds_dict = json.loads(GOOGLE_CREDS_JSON)
 
-# Load service account from credentials.json (in same folder)
-creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
+creds = Credentials.from_service_account_info(
+    creds_dict, scopes=["https://www.googleapis.com/auth/spreadsheets"]
+)
 client = gspread.authorize(creds)
+
+SHEET_ID = os.getenv("SHEET_ID")
 sheet = client.open_by_key(SHEET_ID).sheet1
 
 # ---------------- Gemini Setup ----------------
