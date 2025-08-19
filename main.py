@@ -14,12 +14,13 @@ CORS(app)
 import json
 import gspread
 from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
 
-GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDENTIALS")
-creds_dict = json.loads(GOOGLE_CREDS_JSON)
+# Load credentials from local file
+creds = service_account.Credentials.from_service_account_file(
+    "credentials.json", scopes=SCOPES
+)
 
-creds = Credentials.from_service_account_info(
-    creds_dict, scopes=["https://www.googleapis.com/auth/spreadsheets"]
 )
 client = gspread.authorize(creds)
 
