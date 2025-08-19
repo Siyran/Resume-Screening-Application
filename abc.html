@@ -17,23 +17,22 @@
       100% {background-position: 0% 50%;}
     }
 
-    /* ----------------- General Animations ----------------- */
+    /* ----------------- Animations ----------------- */
     .fade-in { animation: fadeIn 0.8s ease forwards; opacity: 0; }
     @keyframes fadeIn { to { opacity: 1; } }
     .slide-up { animation: slideUp 0.5s ease forwards; opacity: 0; }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-    /* ----------------- Glassmorphism Card ----------------- */
+    /* ----------------- Glassmorphism ----------------- */
     .glass-card {
       background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
       border: 1px solid rgba(255, 255, 255, 0.3);
       transition: all 0.3s ease;
     }
     .glass-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
 
-    /* ----------------- Input/Buttons ----------------- */
+    /* ----------------- Inputs/Buttons ----------------- */
     input:focus, button:focus, textarea:focus {
       outline: none;
       box-shadow: 0 0 15px rgba(59,130,246,0.5);
@@ -45,7 +44,7 @@
     .btn-green:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 20px rgba(16,185,129,0.3); }
 
     /* ----------------- Chat ----------------- */
-    .chat-bubble { padding: 0.6rem 1rem; border-radius: 1rem; max-width: 80%; word-wrap: break-word; margin-bottom: 0.5rem; animation: fadeIn 0.4s ease forwards; }
+    .chat-bubble { padding: 0.6rem 1rem; border-radius: 1rem; max-width: 80%; margin-bottom: 0.5rem; }
     .chat-user { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 0.2rem; }
     .chat-ai { background: #d1fae5; color: #065f46; align-self: flex-start; border-bottom-left-radius: 0.2rem; }
     .typing-dots::after { content: ''; display: inline-block; width: 1em; text-align: left; animation: dots 1s steps(3,end) infinite; }
@@ -53,31 +52,11 @@
 
     /* ----------------- Score Bar ----------------- */
     .score-bar-wrapper { display: flex; justify-content: center; margin-top: 12px; }
-    .score-bar-container {
-      background: rgba(255,255,255,0.2);
-      border-radius: 1rem;
-      height: 28px;
-      width: 80%;
-      overflow: hidden;
-    }
-    .score-bar-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 1rem;
-      transition: width 0.6s ease, background-color 0.4s ease;
-      text-align: center;
-      color: white;
-      font-weight: bold;
-      line-height: 28px;
-    }
+    .score-bar-container { background: rgba(255,255,255,0.2); border-radius: 1rem; height: 28px; width: 80%; overflow: hidden; }
+    .score-bar-fill { height: 100%; width: 0%; border-radius: 1rem; transition: width 0.6s ease, background-color 0.4s ease; text-align: center; color: white; font-weight: bold; line-height: 28px; }
 
     /* ----------------- Floating Particles ----------------- */
-    .particle {
-      position: absolute;
-      border-radius: 50%;
-      opacity: 0.6;
-      animation: float 10s linear infinite;
-    }
+    .particle { position: absolute; border-radius: 50%; opacity: 0.6; animation: float 10s linear infinite; }
     @keyframes float {
       0% { transform: translateY(0) translateX(0); opacity:0.6; }
       50% { transform: translateY(-50px) translateX(20px); opacity:1; }
@@ -90,22 +69,22 @@
   <!-- Floating Particles -->
   <script>
     for(let i=0;i<15;i++){
-      const p = document.createElement('div');
+      const p=document.createElement('div');
       p.className='particle';
-      const size = Math.random()*12+6;
-      p.style.width = size+'px';
-      p.style.height = size+'px';
-      p.style.background = ['#4f46e5','#3b82f6','#10b981','#06b6d4','#f59e0b'][Math.floor(Math.random()*5)];
-      p.style.top = Math.random()*100+'%';
-      p.style.left = Math.random()*100+'%';
-      p.style.animationDuration = (5+Math.random()*10)+'s';
+      const size=Math.random()*12+6;
+      p.style.width=size+'px';
+      p.style.height=size+'px';
+      p.style.background=['#4f46e5','#3b82f6','#10b981','#06b6d4','#f59e0b'][Math.floor(Math.random()*5)];
+      p.style.top=Math.random()*100+'%';
+      p.style.left=Math.random()*100+'%';
+      p.style.animationDuration=(5+Math.random()*10)+'s';
       document.body.appendChild(p);
     }
   </script>
 
   <h1 class="text-5xl font-extrabold text-white fade-in drop-shadow-lg">🚀 HR Screening Application</h1>
 
-  <!-- Form + Chat Container -->
+  <!-- Form + Chat -->
   <div class="flex flex-col lg:flex-row w-full max-w-6xl justify-center items-start gap-8">
 
     <!-- Application Form -->
@@ -116,12 +95,10 @@
       <input type="file" name="resume" accept=".pdf,.doc,.docx" class="w-full border-0 p-3 rounded-xl bg-white/30 font-semibold" required>
       <button type="submit" class="btn-gradient text-white font-bold px-6 py-3 rounded-xl w-full">Submit Application</button>
 
-      <!-- Processing & Score -->
-      <div id="message-box" class="hidden mt-4 text-center p-3 rounded-xl transition-all duration-300"></div>
+      <!-- Messages & Score -->
+      <div id="message-box" class="hidden mt-4 text-center p-3 rounded-xl"></div>
       <div class="score-bar-wrapper hidden" id="score-bar-wrapper">
-        <div class="score-bar-container" id="score-bar-container">
-          <div class="score-bar-fill" id="score-bar-fill">0%</div>
-        </div>
+        <div class="score-bar-container"><div class="score-bar-fill" id="score-bar-fill">0%</div></div>
       </div>
     </form>
 
@@ -137,92 +114,83 @@
   </div>
 
   <script>
-    const form = document.getElementById("application-form");
-    const messageBox = document.getElementById("message-box");
-    const scoreBarWrapper = document.getElementById("score-bar-wrapper");
-    const scoreBarFill = document.getElementById("score-bar-fill");
+    const form=document.getElementById("application-form");
+    const messageBox=document.getElementById("message-box");
+    const scoreBarWrapper=document.getElementById("score-bar-wrapper");
+    const scoreBarFill=document.getElementById("score-bar-fill");
+    const sendBtn=document.getElementById("send-btn");
+    const userInput=document.getElementById("user-input");
+    const chatMessages=document.getElementById("chat-messages");
 
-    const sendBtn = document.getElementById("send-btn");
-    const userInput = document.getElementById("user-input");
-    const chatMessages = document.getElementById("chat-messages");
-
-    // Form submission with processing animation
-    form.addEventListener("submit", async (e) => {
+    // Form Submit
+    form.addEventListener("submit",async e=>{
       e.preventDefault();
-      const formData = new FormData(form);
+      const formData=new FormData(form);
 
-      messageBox.textContent = "Checking your resume...";
-      messageBox.className = "mt-4 p-3 rounded-xl text-center bg-blue-100 text-blue-700 fade-in";
+      messageBox.textContent="Checking your resume...";
+      messageBox.className="mt-4 p-3 rounded-xl text-center bg-blue-100 text-blue-700 fade-in";
       messageBox.classList.remove("hidden");
       scoreBarWrapper.classList.add("hidden");
-      scoreBarFill.style.width = "0%";
+      scoreBarFill.style.width="0%";
 
       try {
-        const res = await fetch("/submit", { method: "POST", body: formData });
-        const data = await res.json();
-        const score = parseInt(data.score || 0);
-        const status = data.status || "Submitted";
+        const res=await fetch("/submit",{method:"POST",body:formData});
+        const data=await res.json();
+        const score=parseInt(data.score||0);
+        const decision=data.decision||"Submitted";
 
-        messageBox.textContent = `Application submitted for ${formData.get("name")} | Status: ${status}`;
-        messageBox.className = "mt-4 p-3 rounded-xl text-center transition-all duration-300 " +
-          (status==="Accepted" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700");
+        messageBox.textContent=`Application submitted for ${formData.get("name")} | Status: ${decision}`;
+        messageBox.className="mt-4 p-3 rounded-xl text-center transition-all duration-300 "+
+          (decision==="Accepted"?"bg-green-100 text-green-700":"bg-red-100 text-red-700");
 
-        // Show score bar centered
+        // Score bar
         scoreBarWrapper.classList.remove("hidden");
-        scoreBarFill.style.width = score + "%";
-        scoreBarFill.textContent = score + "%";
-
+        scoreBarFill.style.width=score+"%";
+        scoreBarFill.textContent=score+"%";
         if(score>=85) scoreBarFill.style.backgroundColor="#10b981";
         else if(score>=60) scoreBarFill.style.backgroundColor="#f59e0b";
         else scoreBarFill.style.backgroundColor="#ef4444";
 
-        if(status==="Accepted" || status==="Rejected") form.reset();
-      } catch {
-        messageBox.textContent = "Server error, try later.";
-        messageBox.className = "mt-4 p-3 rounded-xl text-center bg-red-100 text-red-700 fade-in";
+        if(decision==="Accepted"||decision==="Rejected") form.reset();
+      } catch(err) {
+        messageBox.textContent="⚠️ "+(err.message||"Server error, try later.");
+        messageBox.className="mt-4 p-3 rounded-xl text-center bg-red-100 text-red-700 fade-in";
       }
     });
 
-    // AI Chat
-    sendBtn.onclick = sendMessage;
-    userInput.addEventListener("keydown", e => { if(e.key==="Enter") sendMessage(); });
+    // Chat
+    sendBtn.onclick=sendMessage;
+    userInput.addEventListener("keydown",e=>{if(e.key==="Enter")sendMessage();});
 
-    async function sendMessage() {
-      const text = userInput.value.trim();
-      if(!text) return;
-      appendMessage(text, "user");
-      userInput.value = "";
-
-      const typingDiv = appendMessage("AI is typing", "ai typing-dots");
-
-      try {
-        const res = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify({ message:text })
-        });
-        const data = await res.json();
+    async function sendMessage(){
+      const text=userInput.value.trim();
+      if(!text)return;
+      appendMessage(text,"user");
+      userInput.value="";
+      const typingDiv=appendMessage("AI is typing","ai typing-dots");
+      try{
+        const res=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})});
+        const data=await res.json();
         typingDiv.remove();
-        appendMessage(data.reply, "ai");
-      } catch {
+        appendMessage(data.reply,"ai");
+      }catch{
         typingDiv.remove();
-        appendMessage("⚠️ Error connecting.", "ai");
+        appendMessage("⚠️ Error connecting.","ai");
       }
     }
 
-    function appendMessage(text, sender) {
-      const div = document.createElement("div");
-      div.textContent = text;
-      div.className = "chat-bubble " + (sender==="user"?"chat-user":"chat-ai");
+    function appendMessage(text,sender){
+      const div=document.createElement("div");
+      div.textContent=text;
+      div.className="chat-bubble "+(sender==="user"?"chat-user":"chat-ai");
       chatMessages.appendChild(div);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+      chatMessages.scrollTop=chatMessages.scrollHeight;
       return div;
     }
-  
-
   </script>
+
+  <footer style="text-align:center; margin-top:20px; font-size:1.2em; color:white;">
+    &copy; 2025 Abrar Ahmad | AI Automation Intern | Labdox
+  </footer>
 </body>
 </html>
- <footer style="text-align:center; margin-top:20px; font-size:1.2em; color:white;">
-  &copy; 2025 Abrar Ahmad | AI Automation Intern | Labdox
-</footer>
