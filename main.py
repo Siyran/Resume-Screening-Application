@@ -9,11 +9,6 @@ from email.mime.multipart import MIMEMultipart
 from oauth2client.service_account import ServiceAccountCredentials
 import PyPDF2, docx
 
-import os
-
-port = int(os.environ.get("PORT", 5000))  # Render provides PORT
-app.run(host="0.0.0.0", port=port)
-
 app = Flask(__name__, static_folder=".", static_url_path="/")
 
 # ---------- CONFIG ----------
@@ -23,13 +18,11 @@ API_KEY = "AIzaSyBNKzbzm0mhx0C_ZnbGa2z-KZcpSMy7c94"
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Job description for scoring (can be customized)
 JOB_DESCRIPTION = """
 Looking for candidates with strong Python, Flask, HTML/CSS, JavaScript skills,
 experience in AI/ML projects, attention to detail, and excellent communication.
 """
 
-# Email config
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_ADDRESS = "your_email@gmail.com"      # Replace with your email
@@ -96,7 +89,6 @@ def extract_text_from_resume(filepath):
     return text
 
 def calculate_score(resume_text):
-    # Simple scoring: count overlap of keywords with job description
     keywords = re.findall(r"\b\w+\b", JOB_DESCRIPTION.lower())
     resume_words = re.findall(r"\b\w+\b", resume_text.lower())
     if not resume_words:
@@ -106,21 +98,21 @@ def calculate_score(resume_text):
     return score
 
 # ---------- EMAIL FUNCTION ----------
-# def send_email(to_email, subject, body):
-#     try:
-#         msg = MIMEMultipart()
-#         msg['From'] = EMAIL_ADDRESS
-#         msg['To'] = to_email
-#         msg['Subject'] = subject
-#         msg.attach(MIMEText(body, 'html'))
+def send_email(to_email, subject, body):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'html'))
 
-#         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-#         server.starttls()
-#         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-#         server.send_message(msg)
-#         server.quit()
-#     except Exception as e:
-#         print("Email failed:", e)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        print("Email failed:", e)
 
 # ---------- ROUTES ----------
 @app.route("/")
@@ -153,7 +145,6 @@ def submit():
         sh = sheet_handle()
         sh.append_row([timestamp, name, email, phone, unique_name, score, status, reasons])
 
-        # Send email
         if status == "Accepted":
             link = f"https://yourcompany.com/next_step?applicant={name}"
             send_email(email, "Application Accepted", f"<p>Congrats {name},</p><p>Your score is {score}. Proceed to the next step: <a href='{link}'>Click here</a></p>")
@@ -177,6 +168,8 @@ def chat():
     except Exception as e:
         return jsonify({"reply":f"AI error: {str(e)}", "trace": traceback.format_exc()}),500
 
+# ---------- RUN SERVER ----------
 if __name__ == "__main__":
-    print("Starting server on http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Starting server on 0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
