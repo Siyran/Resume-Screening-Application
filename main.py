@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Flask, request, jsonify, render_template
 import gspread
 from google.oauth2 import service_account
@@ -10,15 +11,12 @@ app = Flask(__name__)
 # Google Sheets + Gemini setup
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-# Load credentials.json from the repo folder
-import json
-from google.oauth2 import service_account
-
+# Load credentials from environment variable
 GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDENTIALS")
 creds_dict = json.loads(GOOGLE_CREDS_JSON)
-creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scope)
+creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 
-)
+# Authorize Google Sheets
 client = gspread.authorize(creds)
 
 # Get Sheet ID from env variable
@@ -48,14 +46,14 @@ def submit():
         os.makedirs("uploads", exist_ok=True)
         resume.save(resume_path)
 
-        # (Optional) Ask Gemini to evaluate
+        # Ask Gemini to evaluate
         prompt = f"Evaluate this candidate:\nName: {name}\nEmail: {email}\nPhone: {phone}\nResume file: {resume.filename}\nGive a suitability score (0-100)."
         gemini_response = gemini_model.generate_content(prompt)
         score_text = gemini_response.text.strip()
         try:
             score = int("".join([c for c in score_text if c.isdigit()]))
         except:
-            score = 50  # fallback
+            score = 50  # fallback if parsing fails
 
         decision = "Accepted" if score >= 60 else "Rejected"
 
