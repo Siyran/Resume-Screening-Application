@@ -1,6 +1,6 @@
 import os
-import json
 import re
+import json
 import logging
 import traceback
 from flask import Flask, request, jsonify
@@ -29,9 +29,8 @@ logger = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 # Configurations (set via Render Dashboard → Environment Variables)
 # -----------------------------------------------------------------------------
-SHEET_ID = os.getenv("SHEET_ID")  # e.g. "1FPmGIUFRi_FrVVROi0rcLI7_p-ub18GxOWWiEoWwnJQ"
+SHEET_ID = os.getenv("SHEET_ID")  # Example: "1FPmGIUFRi_FrVVROi0rcLI7_p-ub18GxOWWiEoWwnJQ"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GOOGLE_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")  # JSON string, not file
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
@@ -39,13 +38,17 @@ if not SHEET_ID:
     raise RuntimeError("❌ SHEET_ID not set in environment variables")
 if not GEMINI_API_KEY:
     raise RuntimeError("❌ GEMINI_API_KEY not set in environment variables")
-if not GOOGLE_CREDENTIALS:
-    raise RuntimeError("❌ GOOGLE_CREDENTIALS not set in environment variables")
 
 # -----------------------------------------------------------------------------
 # Google Sheets Setup
 # -----------------------------------------------------------------------------
-creds = Credentials.from_service_account_info(json.loads(GOOGLE_CREDENTIALS), scopes=SCOPES)
+# Load credentials from credentials.json (uploaded with your project)
+CREDENTIALS_FILE = "credentials.json"
+
+if not os.path.exists(CREDENTIALS_FILE):
+    raise RuntimeError("❌ credentials.json not found. Please upload it to project root.")
+
+creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
 sheets_service = build("sheets", "v4", credentials=creds)
 
 # -----------------------------------------------------------------------------
