@@ -1,21 +1,14 @@
 #!/usr/bin/env python3
 """
-main.py – Stable Flask backend for HR Screening App
+main.py – Stable Flask backend for HR Screening App (NO email)
 - Uploads resumes (PDF/DOC/DOCX/TXT)
 - Parses text and calculates a simple JD-match score
 - Logs to Google Sheets (graceful degradation if Sheets unavailable)
-- Sends notification email (optional; skips if creds missing)
 - Gemini chat endpoint with retry + clearer errors
-- CORS enabled for local dev; large, safe timeouts; structured JSON
+- CORS enabled; structured JSON
 
-Setup (once):
-1) Python 3.10+
-2) pip install -r requirements.txt (see bottom comment for list)
-3) Put your Google service account key as credentials.json in the app folder.
-   Share the target Google Sheet to that service account email.
-4) Set env vars (recommended):
-   SHEET_ID, GEMINI_API_KEY, SMTP_EMAIL, SMTP_APP_PASSWORD
-5) Run:  python main.py   (defaults to 0.0.0.0:5000)
+Run:
+  python main.py
 """
 
 from flask import Flask, request, jsonify, send_from_directory
@@ -26,13 +19,10 @@ import gspread
 import datetime
 import traceback
 import requests
-import smtplib
 import re
 import logging
 from typing import Tuple
 from werkzeug.utils import secure_filename
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Optional libs
@@ -55,16 +45,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Env-configurable secrets (fallback to hard-coded only for local tests)
-SHEET_ID = os.environ.get("SHEET_ID", "1FPmGIUFRi_FrVVROi0rcLI7_p-ub18GxOWWiEoWwnJQ")
-CREDENTIALS_FILE = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "credentials.json")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
-
-SMTP_SERVER = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_EMAIL = os.environ.get("SMTP_EMAIL", "")
-SMTP_APP_PASSWORD = os.environ.get("SMTP_APP_PASSWORD", "")
+# ---- Hard-coded values per your request ----
+SHEET_ID = "1FPmGIUFRi_FrVVROi0rcLI7_p-ub18GxOWWiEoWwnJQ"
+CREDENTIALS_FILE = "credentials.json"
+API_KEY = "AIzaSyBNKzbzm0mhx0C_ZnbGa2z-KZcpSMy7c94"  # Gemini API key
+GEMINI_MODEL = "gemini-2.0-flash"
 
 JOB_DESCRIPTION = (
     "Looking for candidates with strong Python, Flask, HTML/CSS, JavaScript skills, "
@@ -80,6 +65,7 @@ logger = logging.getLogger(__name__)
 
 # ---------------------- HELPERS ----------------------
 
+
 def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -91,14 +77,14 @@ def build_gsheet_client():
     ]
     if not os.path.exists(CREDENTIALS_FILE):
         raise FileNotFoundError(
-            "credentials.json not found. Provide a Google service account key as credentials.json "
-            "or set GOOGLE_APPLICATION_CREDENTIALS."
+            "credentials.json not found. Place your Google service account key as credentials.json"
         )
     creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, scope)
     return gspread.authorize(creds)
 
 
 _cached_sheet = None
+
 
 def sheet_handle():
     """Get the first worksheet and ensure headers. Cache handle for reuse."""
@@ -126,6 +112,7 @@ def sheet_handle():
 
 # ---------------------- Resume Parsing ----------------------
 
+
 def extract_text_from_resume(filepath: str) -> str:
     ext = filepath.lower().rsplit(".", 1)[-1]
     text = ""
@@ -134,7 +121,6 @@ def extract_text_from_resume(filepath: str) -> str:
             with open(filepath, "rb") as f:
                 reader = PyPDF2.PdfReader(f)
                 for page in reader.pages:
-                    # extract_text may return None if page is image-only
                     page_txt = page.extract_text() or ""
                     text += page_txt + " "
         elif ext in {"doc", "docx"}:
@@ -146,7 +132,6 @@ def extract_text_from_resume(filepath: str) -> str:
                 text = f.read()
     except Exception as e:
         logger.exception("Resume parse failed: %s", e)
-        # Return empty text (score will be 0) but don't crash submission
         return ""
     return text
 
@@ -156,57 +141,31 @@ def calculate_score(resume_text: str) -> int:
         return 0
     keywords = re.findall(r"\b\w+\b", JOB_DESCRIPTION.lower())
     resume_words = set(re.findall(r"\b\w+\b", resume_text.lower()))
-    # Count unique keyword matches for a fairer score
     unique_keywords = set(keywords)
     matches = sum(1 for k in unique_keywords if k in resume_words)
     score = min(100, int(matches / max(1, len(unique_keywords)) * 100))
     return score
 
 
-# ---------------------- Email ----------------------
-
-def send_email(to_email: str, subject: str, body_html: str) -> Tuple[bool, str]:
-    if not (SMTP_EMAIL and SMTP_APP_PASSWORD and to_email):
-        return False, "Email not configured – skipped"
-    try:
-        msg = MIMEMultipart()
-        msg["From"] = "gamingsxr@gmail.com"
-        msg["To"] = ""
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body_html, "html"))
-
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=20)
-        server.starttls()
-        server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        return True, "sent"
-    except Exception as e:
-        logger.exception("Email failed: %s", e)
-        return False, f"failed: {e}"
-
-
 # ---------------------- Gemini ----------------------
 
-def call_gemini(prompt_text: str) -> str:
-    if not GEMINI_API_KEY:
-        return "(Gemini API key missing – set GEMINI_API_KEY)"
 
+def call_gemini(prompt_text: str) -> str:
+    if not API_KEY:
+        return "(Gemini API key missing)"
     url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-        f"?key={GEMINI_API_KEY}"
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{GEMINI_MODEL}:generateContent?key={API_KEY}"
     )
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt_text}]}],
         "generationConfig": {"temperature": 0.2, "topP": 0.9, "maxOutputTokens": 384},
     }
 
-    # Simple retry loop for flaky network or 429
     for attempt in range(3):
         try:
             resp = requests.post(url, json=payload, timeout=25)
             if resp.status_code >= 400:
-                # Backoff on 429/5xx
                 if resp.status_code in (429, 500, 502, 503, 504) and attempt < 2:
                     continue
                 return f"(Gemini error {resp.status_code}: {resp.text[:200]})"
@@ -225,6 +184,7 @@ def call_gemini(prompt_text: str) -> str:
 
 
 # ---------------------- Routes ----------------------
+
 
 @app.route("/")
 def home():
@@ -246,17 +206,13 @@ def health():
 
 @app.route("/submit", methods=["POST"])
 def submit():
-    warnings = []
     try:
         name = request.form.get("name", "").strip()
         email = request.form.get("email", "").strip()
         phone = request.form.get("phone", "").strip()
 
         if not name or not email or not phone:
-            return jsonify({
-                "ok": False,
-                "error": "Name, email and phone are required",
-            }), 400
+            return jsonify({"ok": False, "error": "Name, email and phone are required"}), 400
 
         if "resume" not in request.files:
             return jsonify({"ok": False, "error": "Resume file required"}), 400
@@ -280,7 +236,8 @@ def submit():
         decision = "Accepted" if score >= 85 else "Rejected"
         reasons = f"Resume scored {score}/100 against required keywords."
 
-        # Try Sheets, but do not fail submission if Sheets is down
+        warnings = []
+        # Try logging to Google Sheets (non-fatal)
         try:
             ws = sheet_handle()
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -288,23 +245,6 @@ def submit():
         except Exception as e:
             logger.exception("Sheets append failed: %s", e)
             warnings.append(f"Sheets logging failed: {e}")
-
-        # Try email (optional)
-        ok_mail, mail_msg = send_email(
-            email,
-            subject=("Application Accepted" if decision == "Accepted" else "Application Status"),
-            body_html=(
-                f"<p>Hi {name},</p><p>Your application score: <b>{score}</b>. "
-                + (
-                    "Proceed to next step: we'll contact you shortly."
-                    if decision == "Accepted"
-                    else "Thanks for applying. Unfortunately you were not selected for the next round."
-                )
-                + "</p>"
-            ),
-        )
-        if not ok_mail:
-            warnings.append(f"Email: {mail_msg}")
 
         return jsonify({
             "ok": True,
@@ -317,11 +257,7 @@ def submit():
 
     except Exception as e:
         logger.exception("/submit crashed: %s", e)
-        return jsonify({
-            "ok": False,
-            "error": str(e),
-            "trace": traceback.format_exc(),
-        }), 500
+        return jsonify({"ok": False, "error": str(e), "trace": traceback.format_exc()}), 500
 
 
 @app.route("/chat", methods=["POST"])
@@ -347,7 +283,6 @@ def chat():
 # ---------------------- Main ----------------------
 if __name__ == "__main__":
     logger.info(f"Starting server on 0.0.0.0:{PORT}")
-    # Use threaded to avoid blocking during network calls
     app.run(host="0.0.0.0", port=PORT, debug=False, threaded=True)
 
 
