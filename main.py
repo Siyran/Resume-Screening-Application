@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # -----------------------------------------------------------------------------
 # Configurations (set via Render Dashboard → Environment Variables)
 # -----------------------------------------------------------------------------
-SHEET_ID = os.getenv("SHEET_ID")  # e.g. "1FPmGIUFRi_FrVVROi0rcLI7_p-ub18GxOWWiEoWwnJQ"
+SHEET_ID = os.getenv("1FPmGIUFRi_FrVVROi0rcLI7_p-ub18GxOWWiEoWwnJQ"")  # e.g. "1FPmGIUFRi_FrVVROi0rcLI7_p-ub18GxOWWiEoWwnJQ"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GOOGLE_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")  # JSON string, not file
 
