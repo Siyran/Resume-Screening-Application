@@ -2,195 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🚀 HR Screening Application</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Screening Portal</title>
   <style>
-    /* ----------------- Animated Gradient Background ----------------- */
     body {
-      background: linear-gradient(-45deg, #6b5b95, #feb236, #d64161, #ff7b25);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
     }
-    @keyframes gradientBG {
-      0% {background-position: 0% 50%;}
-      50% {background-position: 100% 50%;}
-      100% {background-position: 0% 50%;}
+    h2 { color: #333; }
+    form, .chatbox {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-
-    /* ----------------- Animations ----------------- */
-    .fade-in { animation: fadeIn 0.8s ease forwards; opacity: 0; }
-    @keyframes fadeIn { to { opacity: 1; } }
-    .slide-up { animation: slideUp 0.5s ease forwards; opacity: 0; }
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-    /* ----------------- Glassmorphism ----------------- */
-    .glass-card {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      transition: all 0.3s ease;
+    label { display: block; margin-top: 10px; }
+    input, button, textarea {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 5px;
     }
-    .glass-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
-
-    /* ----------------- Inputs/Buttons ----------------- */
-    input:focus, button:focus, textarea:focus {
-      outline: none;
-      box-shadow: 0 0 15px rgba(59,130,246,0.5);
-      transition: box-shadow 0.3s ease;
+    button {
+      background: #007bff; color: white;
+      cursor: pointer; font-weight: bold;
     }
-    .btn-gradient { background: linear-gradient(90deg, #4f46e5, #3b82f6); transition: all 0.3s ease; }
-    .btn-gradient:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 20px rgba(59,130,246,0.3); }
-    .btn-green { background: linear-gradient(90deg, #10b981, #06b6d4); }
-    .btn-green:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 8px 20px rgba(16,185,129,0.3); }
-
-    /* ----------------- Chat ----------------- */
-    .chat-bubble { padding: 0.6rem 1rem; border-radius: 1rem; max-width: 80%; margin-bottom: 0.5rem; }
-    .chat-user { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 0.2rem; }
-    .chat-ai { background: #d1fae5; color: #065f46; align-self: flex-start; border-bottom-left-radius: 0.2rem; }
-    .typing-dots::after { content: ''; display: inline-block; width: 1em; text-align: left; animation: dots 1s steps(3,end) infinite; }
-    @keyframes dots { 0%,20%{content:'';} 40%{content:'.';} 60%{content:'..';} 80%,100%{content:'...';} }
-
-    /* ----------------- Score Bar ----------------- */
-    .score-bar-wrapper { display: flex; justify-content: center; margin-top: 12px; }
-    .score-bar-container { background: rgba(255,255,255,0.2); border-radius: 1rem; height: 28px; width: 80%; overflow: hidden; }
-    .score-bar-fill { height: 100%; width: 0%; border-radius: 1rem; transition: width 0.6s ease, background-color 0.4s ease; text-align: center; color: white; font-weight: bold; line-height: 28px; }
-
-    /* ----------------- Floating Particles ----------------- */
-    .particle { position: absolute; border-radius: 50%; opacity: 0.6; animation: float 10s linear infinite; }
-    @keyframes float {
-      0% { transform: translateY(0) translateX(0); opacity:0.6; }
-      50% { transform: translateY(-50px) translateX(20px); opacity:1; }
-      100% { transform: translateY(0) translateX(-20px); opacity:0.6; }
+    button:hover { background: #0056b3; }
+    #result, #chat-response {
+      margin-top: 15px; padding: 10px;
+      border-radius: 5px; background: #f1f1f1;
+      white-space: pre-wrap;
     }
   </style>
 </head>
-<body class="flex flex-col items-center p-6 min-h-screen space-y-8 font-sans relative overflow-hidden">
+<body>
 
-  <!-- Floating Particles -->
-  <script>
-    for(let i=0;i<15;i++){
-      const p=document.createElement('div');
-      p.className='particle';
-      const size=Math.random()*12+6;
-      p.style.width=size+'px';
-      p.style.height=size+'px';
-      p.style.background=['#4f46e5','#3b82f6','#10b981','#06b6d4','#f59e0b'][Math.floor(Math.random()*5)];
-      p.style.top=Math.random()*100+'%';
-      p.style.left=Math.random()*100+'%';
-      p.style.animationDuration=(5+Math.random()*10)+'s';
-      document.body.appendChild(p);
-    }
-  </script>
+  <h2>Internship Application</h2>
+  <form id="application-form" enctype="multipart/form-data">
+    <label>Full Name</label>
+    <input type="text" name="name" required>
 
-  <h1 class="text-5xl font-extrabold text-white fade-in drop-shadow-lg">🚀 HR Screening Application</h1>
+    <label>Email</label>
+    <input type="email" name="email" required>
 
-  <!-- Form + Chat -->
-  <div class="flex flex-col lg:flex-row w-full max-w-6xl justify-center items-start gap-8">
+    <label>Phone Number</label>
+    <input type="text" name="phone" required>
 
-    <!-- Application Form -->
-    <form id="application-form" class="glass-card p-8 rounded-3xl shadow-xl w-full lg:w-1/2 space-y-5 fade-in">
-      <input name="name" placeholder="Full Name" class="w-full border-0 p-4 rounded-xl bg-white/30 placeholder-purple-700 text-purple-900 font-semibold" required>
-      <input type="email" name="email" placeholder="Email" class="w-full border-0 p-4 rounded-xl bg-white/30 placeholder-purple-700 text-purple-900 font-semibold" required>
-      <input type="text" name="phone" placeholder="Phone" class="w-full border-0 p-4 rounded-xl bg-white/30 placeholder-purple-700 text-purple-900 font-semibold" required>
-      <input type="file" name="resume" accept=".pdf,.doc,.docx" class="w-full border-0 p-3 rounded-xl bg-white/30 font-semibold" required>
-      <button type="submit" class="btn-gradient text-white font-bold px-6 py-3 rounded-xl w-full">Submit Application</button>
+    <label>Upload Resume</label>
+    <input type="file" name="resume" accept=".pdf,.doc,.docx" required>
 
-      <!-- Messages & Score -->
-      <div id="message-box" class="hidden mt-4 text-center p-3 rounded-xl"></div>
-      <div class="score-bar-wrapper hidden" id="score-bar-wrapper">
-        <div class="score-bar-container"><div class="score-bar-fill" id="score-bar-fill">0%</div></div>
-      </div>
-    </form>
+    <button type="submit">Submit Application</button>
+  </form>
+  <div id="result"></div>
 
-    <!-- AI Chat -->
-    <div class="glass-card p-6 mt-6 lg:mt-0 rounded-3xl shadow-xl w-full lg:w-1/2 flex flex-col space-y-4 fade-in">
-      <div id="chat-messages" class="flex flex-col h-64 overflow-y-auto p-4 rounded-xl bg-white/20 border border-white/30"></div>
-      <div class="flex space-x-2">
-        <input id="user-input" class="flex-1 border-0 p-4 rounded-xl bg-white/30 placeholder-green-700 text-green-900 font-semibold" placeholder="Ask AI about the role...">
-        <button id="send-btn" class="btn-green text-white font-bold px-6 py-3 rounded-xl">Send</button>
-      </div>
-    </div>
-
+  <h2>Ask About Internship</h2>
+  <div class="chatbox">
+    <textarea id="question" rows="3" placeholder="Ask a question..."></textarea>
+    <button id="ask-btn">Ask</button>
+    <div id="chat-response"></div>
   </div>
 
   <script>
-    const form=document.getElementById("application-form");
-    const messageBox=document.getElementById("message-box");
-    const scoreBarWrapper=document.getElementById("score-bar-wrapper");
-    const scoreBarFill=document.getElementById("score-bar-fill");
-    const sendBtn=document.getElementById("send-btn");
-    const userInput=document.getElementById("user-input");
-    const chatMessages=document.getElementById("chat-messages");
-
-    // Form Submit
-    form.addEventListener("submit",async e=>{
+    // Handle Application Form Submission
+    document.getElementById("application-form").addEventListener("submit", async function(e) {
       e.preventDefault();
-      const formData=new FormData(form);
+      const formData = new FormData(this);
 
-      messageBox.textContent="Checking your resume...";
-      messageBox.className="mt-4 p-3 rounded-xl text-center bg-blue-100 text-blue-700 fade-in";
-      messageBox.classList.remove("hidden");
-      scoreBarWrapper.classList.add("hidden");
-      scoreBarFill.style.width="0%";
+      const response = await fetch("/submit", {
+        method: "POST",
+        body: formData
+      });
 
-      try {
-        const res=await fetch("/submit",{method:"POST",body:formData});
-        const data=await res.json();
-        const score=parseInt(data.score||0);
-        const decision=data.decision||"Submitted";
-
-        messageBox.textContent=`Application submitted for ${formData.get("name")} | Status: ${decision}`;
-        messageBox.className="mt-4 p-3 rounded-xl text-center transition-all duration-300 "+
-          (decision==="Accepted"?"bg-green-100 text-green-700":"bg-red-100 text-red-700");
-
-        // Score bar
-        scoreBarWrapper.classList.remove("hidden");
-        scoreBarFill.style.width=score+"%";
-        scoreBarFill.textContent=score+"%";
-        if(score>=85) scoreBarFill.style.backgroundColor="#10b981";
-        else if(score>=60) scoreBarFill.style.backgroundColor="#f59e0b";
-        else scoreBarFill.style.backgroundColor="#ef4444";
-
-        if(decision==="Accepted"||decision==="Rejected") form.reset();
-      } catch(err) {
-        messageBox.textContent="⚠️ "+(err.message||"Server error, try later.");
-        messageBox.className="mt-4 p-3 rounded-xl text-center bg-red-100 text-red-700 fade-in";
-      }
+      const result = await response.json();
+      document.getElementById("result").innerText = JSON.stringify(result, null, 2);
     });
 
-    // Chat
-    sendBtn.onclick=sendMessage;
-    userInput.addEventListener("keydown",e=>{if(e.key==="Enter")sendMessage();});
+    // Handle Chat with HR (Gemini)
+    document.getElementById("ask-btn").addEventListener("click", async function() {
+      const question = document.getElementById("question").value;
+      if (!question.trim()) return;
 
-    async function sendMessage(){
-      const text=userInput.value.trim();
-      if(!text)return;
-      appendMessage(text,"user");
-      userInput.value="";
-      const typingDiv=appendMessage("AI is typing","ai typing-dots");
-      try{
-        const res=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:text})});
-        const data=await res.json();
-        typingDiv.remove();
-        appendMessage(data.reply,"ai");
-      }catch{
-        typingDiv.remove();
-        appendMessage("⚠️ Error connecting.","ai");
-      }
-    }
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
 
-    function appendMessage(text,sender){
-      const div=document.createElement("div");
-      div.textContent=text;
-      div.className="chat-bubble "+(sender==="user"?"chat-user":"chat-ai");
-      chatMessages.appendChild(div);
-      chatMessages.scrollTop=chatMessages.scrollHeight;
-      return div;
-    }
+      const result = await response.json();
+      document.getElementById("chat-response").innerText = result.answer || result.error;
+    });
   </script>
-
-  <footer style="text-align:center; margin-top:20px; font-size:1.2em; color:white;">
-    &copy; 2025 Abrar Ahmad | AI Automation Intern | Labdox
-  </footer>
 </body>
 </html>
