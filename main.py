@@ -1,194 +1,100 @@
 import os
-import re
-import json
-import logging
-import traceback
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-
-# Google Sheets API
-from googleapiclient.discovery import build
+from werkzeug.utils import secure_filename
+import google.generativeai as genai
+import gspread
 from google.oauth2.service_account import Credentials
 
-# File parsing
-from PyPDF2 import PdfReader
-import docx
-
-# Gemini
-import google.generativeai as genai
-
-# -----------------------------------------------------------------------------
-# App setup
-# -----------------------------------------------------------------------------
+# Flask app setup
 app = Flask(__name__)
 CORS(app)
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# -----------------------------------------------------------------------------
-# Configurations (set via Render Dashboard → Environment Variables)
-# -----------------------------------------------------------------------------
-SHEET_ID = os.getenv("SHEET_ID")  # Example: "1FPmGIUFRi_FrVVROi0rcLI7_p-ub18GxOWWiEoWwnJQ"
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
+# ---------------- Google Sheets Setup ----------------
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+SHEET_ID = os.getenv("SHEET_ID")  # keep Sheet ID as env variable
 
 if not SHEET_ID:
-    raise RuntimeError("❌ SHEET_ID not set in environment variables")
-if not GEMINI_API_KEY:
-    raise RuntimeError("❌ GEMINI_API_KEY not set in environment variables")
+    raise ValueError("Missing SHEET_ID environment variable.")
 
-# -----------------------------------------------------------------------------
-# Google Sheets Setup
-# -----------------------------------------------------------------------------
-# Load credentials from credentials.json (uploaded with your project)
-CREDENTIALS_FILE = "credentials.json"
+# Load service account from credentials.json (in same folder)
+creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
+client = gspread.authorize(creds)
+sheet = client.open_by_key(SHEET_ID).sheet1
 
-if not os.path.exists(CREDENTIALS_FILE):
-    raise RuntimeError("❌ credentials.json not found. Please upload it to project root.")
+# ---------------- Gemini Setup ----------------
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=SCOPES)
-sheets_service = build("sheets", "v4", credentials=creds)
+# ---------------- Routes ----------------
 
-# -----------------------------------------------------------------------------
-# Gemini Setup
-# -----------------------------------------------------------------------------
-genai.configure(api_key=GEMINI_API_KEY)
-
-# -----------------------------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------------------------
-def extract_text_from_file(file_path):
-    """Extract raw text from uploaded PDF or DOCX."""
-    text = ""
-    try:
-        if file_path.endswith(".pdf"):
-            with open(file_path, "rb") as f:
-                reader = PdfReader(f)
-                for page in reader.pages:
-                    text += page.extract_text() or ""
-        elif file_path.endswith(".docx"):
-            doc = docx.Document(file_path)
-            for para in doc.paragraphs:
-                text += para.text + "\n"
-        else:
-            return None
-    except Exception as e:
-        logger.exception("Error parsing file: %s", e)
-        return None
-    return text.strip()
-
-def score_resume_with_gemini(resume_text, job_description="AI Intern role"):
-    """Ask Gemini to score resume relevance to a job description."""
-    try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        prompt = f"""
-        You are an HR assistant. Score this resume for relevance to {job_description}.
-        Resume text:
-        {resume_text[:4000]}  # limit to avoid prompt overflow
-
-        Return JSON with:
-        - score: 0-100
-        - decision: "Accepted" or "Rejected"
-        - feedback: short feedback
-        """
-        response = model.generate_content(prompt)
-        if not response or not response.text:
-            return {"score": 0, "decision": "Rejected", "feedback": "No response"}
-        
-        # Try to parse JSON from Gemini
-        match = re.search(r"\{.*\}", response.text, re.DOTALL)
-        if match:
-            return json.loads(match.group(0))
-        else:
-            return {"score": 50, "decision": "Rejected", "feedback": response.text.strip()}
-    except Exception as e:
-        logger.exception("Gemini scoring failed: %s", e)
-        return {"score": 0, "decision": "Rejected", "feedback": "Error scoring resume"}
-
-def save_to_sheets(name, email, phone, score, decision):
-    """Append applicant data to Google Sheet."""
-    try:
-        body = {
-            "values": [[name, email, phone, str(score), decision]]
-        }
-        sheets_service.spreadsheets().values().append(
-            spreadsheetId=SHEET_ID,
-            range="Sheet1!A:E",
-            valueInputOption="RAW",
-            body=body
-        ).execute()
-        return True
-    except Exception as e:
-        logger.exception("Failed to save to Google Sheets: %s", e)
-        return False
-
-# -----------------------------------------------------------------------------
-# Routes
-# -----------------------------------------------------------------------------
 @app.route("/")
-def home():
-    return jsonify({"ok": True, "message": "HR Screening API running 🚀"})
+def index():
+    return render_template("abc.html")
 
-@app.route("/apply", methods=["POST"])
-def apply():
+@app.route("/submit", methods=["POST"])
+def submit():
     try:
         name = request.form.get("name")
         email = request.form.get("email")
         phone = request.form.get("phone")
-        resume_file = request.files.get("resume")
+        resume = request.files.get("resume")
 
-        if not all([name, email, phone, resume_file]):
-            return jsonify({"ok": False, "error": "Missing fields"}), 400
+        if not all([name, email, phone, resume]):
+            return jsonify({"error": "All fields required"}), 400
 
-        # Save uploaded file temporarily
-        upload_path = os.path.join("/tmp", resume_file.filename)
-        resume_file.save(upload_path)
+        filename = secure_filename(resume.filename)
+        resume_path = os.path.join("uploads", filename)
+        os.makedirs("uploads", exist_ok=True)
+        resume.save(resume_path)
 
-        # Extract text
-        resume_text = extract_text_from_file(upload_path)
-        if not resume_text:
-            return jsonify({"ok": False, "error": "Unsupported or unreadable file"}), 400
+        # AI Screening
+        prompt = f"""
+        You are an HR assistant. Based on this applicant’s details:
+        Name: {name}
+        Email: {email}
+        Phone: {phone}
+        Resume File: {filename}
 
-        # Score resume
-        result = score_resume_with_gemini(resume_text)
-        score = result.get("score", 0)
-        decision = result.get("decision", "Rejected")
+        Rate applicant suitability for internship on scale 0-100 and give decision.
+        Respond in JSON like: {{"score": 85, "decision": "Accepted"}}
+        """
+        response = model.generate_content(prompt).text.strip()
+
+        import re, json as pyjson
+        try:
+            match = re.search(r"\{.*\}", response, re.S)
+            result = pyjson.loads(match.group()) if match else {"score": 0, "decision": "Rejected"}
+        except:
+            result = {"score": 0, "decision": "Rejected"}
 
         # Save to Google Sheets
-        save_ok = save_to_sheets(name, email, phone, score, decision)
+        sheet.append_row([name, email, phone, result["score"], result["decision"]])
 
-        return jsonify({
-            "ok": True,
-            "message": "Application submitted",
-            "score": score,
-            "decision": decision,
-            "feedback": result.get("feedback", ""),
-            "saved_to_sheets": save_ok
-        })
+        return jsonify(result)
+
     except Exception as e:
-        logger.error("Error in /apply: %s", traceback.format_exc())
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route("/ask", methods=["POST"])
-def ask_gemini():
-    """Let applicants ask Gemini about role or company."""
+@app.route("/chat", methods=["POST"])
+def chat():
     try:
-        data = request.json
+        data = request.get_json()
         question = data.get("question", "")
         if not question:
-            return jsonify({"ok": False, "error": "No question provided"}), 400
+            return jsonify({"error": "No question provided"}), 400
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(question)
-        return jsonify({"ok": True, "answer": response.text.strip()})
+        prompt = f"You are an HR assistant. Answer clearly:\nQ: {question}\nA:"
+        response = model.generate_content(prompt).text.strip()
+
+        return jsonify({"answer": response})
+
     except Exception as e:
-        logger.exception("Gemini QnA failed: %s", e)
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-# -----------------------------------------------------------------------------
-# Run (for local dev)
-# -----------------------------------------------------------------------------
+@app.route("/health")
+def health():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
