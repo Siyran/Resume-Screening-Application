@@ -9,6 +9,11 @@ from email.mime.multipart import MIMEMultipart
 from oauth2client.service_account import ServiceAccountCredentials
 import PyPDF2, docx
 
+import os
+
+port = int(os.environ.get("PORT", 5000))  # Render provides PORT
+app.run(host="0.0.0.0", port=port)
+
 app = Flask(__name__, static_folder=".", static_url_path="/")
 
 # ---------- CONFIG ----------
