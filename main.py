@@ -1,5 +1,4 @@
 import os
-import json
 from flask import Flask, request, jsonify, render_template
 import gspread
 from google.oauth2 import service_account
@@ -11,10 +10,10 @@ app = Flask(__name__)
 # Google Sheets + Gemini setup
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-# Load credentials from environment variable
-GOOGLE_CREDS_JSON = os.getenv("GOOGLE_CREDENTIALS")
-creds_dict = json.loads(GOOGLE_CREDS_JSON)
-creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+# Load credentials.json directly
+creds = service_account.Credentials.from_service_account_file(
+    "credentials.json", scopes=SCOPES
+)
 
 # Authorize Google Sheets
 client = gspread.authorize(creds)
@@ -23,7 +22,7 @@ client = gspread.authorize(creds)
 SHEET_ID = os.getenv("SHEET_ID")
 sheet = client.open_by_key(SHEET_ID).sheet1
 
-# Gemini API setup
+# Gemini API setup (still needs environment variable)
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 gemini_model = genai.GenerativeModel("gemini-pro")
 
